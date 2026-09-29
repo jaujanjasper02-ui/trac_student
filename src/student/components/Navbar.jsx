@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaSignOutAlt, FaArrowLeft, FaUserCircle } from "react-icons/fa";
-import { SCHOOL, THEME } from "../../config/trac.config";
+import { SCHOOL, SYSTEM, THEME } from "../../config/trac.config";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -10,11 +10,26 @@ export default function Navbar() {
   const [avatarUrl, setAvatarUrl] = useState('');
 
   useEffect(() => {
-    const loadAvatar = () => {
+    const loadAvatar = async () => {
       try {
         const storedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
         const user = storedUser.user || storedUser;
         setAvatarUrl(user.avatar_url || '');
+
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        const response = await fetch(`${SYSTEM.apiBaseUrl}/auth/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const profile = data.profile;
+        if (!profile) return;
+
+        setAvatarUrl(profile.avatar_url || '');
+        localStorage.setItem('currentUser', JSON.stringify({ ...user, ...profile, name: profile.full_name }));
       } catch {
         setAvatarUrl('');
       }
@@ -74,7 +89,7 @@ export default function Navbar() {
             {showBackButton && (
               <button
                 onClick={() => navigate(-1)}
-                className="trac-button-outline flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full transition-all duration-200"
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-[#1B5E20] transition-all duration-200 hover:bg-[#F1F8E9] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B5E20]/30"
                 aria-label="Back"
               >
                 <FaArrowLeft />
@@ -119,7 +134,7 @@ export default function Navbar() {
                 <button
                   onClick={() => navigate("/profile")}
                   title="Profile"
-                  className="trac-button-outline flex min-h-11 min-w-11 items-center justify-center rounded-full transition-all"
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#1B5E20] transition-all hover:bg-[#F1F8E9] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B5E20]/30"
                 >
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9" />
@@ -141,7 +156,7 @@ export default function Navbar() {
               <button
                 onClick={() => navigate("/profile")}
                 title="Profile"
-                className="trac-button-outline flex min-h-11 min-w-11 items-center justify-center rounded-full transition-all"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#1B5E20] transition-all hover:bg-[#F1F8E9] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B5E20]/30"
               >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9" />
@@ -156,7 +171,7 @@ export default function Navbar() {
 
       {/* LOGOUT MODAL - TRAC Theme */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 p-3 backdrop-blur-sm sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm sm:p-4">
           <div role="dialog" aria-modal="true" aria-labelledby="logout-title" className="max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl bg-white shadow-2xl">
             {/* Header with TRAC Gradient */}
             <div className="bg-gradient-to-r from-[#1B5E20] to-[#2E7D32] px-6 py-4">

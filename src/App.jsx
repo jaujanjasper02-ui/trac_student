@@ -21,7 +21,11 @@ export default function App() {
 
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isStudentAuth = location.pathname === "/login";
-  const showStudentNavbar = !isAdminRoute && !isStudentAuth && location.pathname !== "/";
+  const navbarlessStudentRoutes = ["/faq", "/need-help", "/privacy"];
+  const showStudentNavbar = !isAdminRoute
+    && !isStudentAuth
+    && location.pathname !== "/"
+    && !navbarlessStudentRoutes.includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-[#F1F8E9]/20">

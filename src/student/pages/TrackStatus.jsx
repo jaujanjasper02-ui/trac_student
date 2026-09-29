@@ -572,7 +572,7 @@ export default function TrackStatus() {
                       <div className="bg-white p-4 rounded-lg border border-amber-200">
                         <p className="font-medium text-gray-800 mb-2">📍 CLAIM INSTRUCTIONS:</p>
                         <ol className="list-decimal list-inside space-y-2 text-sm">
-                          <li className="text-gray-700"><span className="font-medium">Go to Cashier Office</span> - Pay ₱{requestData.amount} and get Official Receipt</li>
+                        
                           <li className="text-gray-700"><span className="font-medium">Go to Registrar Office</span> - Present Official Receipt and Valid ID</li>
                           <li className="text-gray-700"><span className="font-medium">Claim your document</span> - Sign the release form</li>
                         </ol>

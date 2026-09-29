@@ -121,7 +121,8 @@ export default function AuthPage() {
   const [canResend, setCanResend] = useState(false);
 
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [verificationUserId, setVerificationUserId] = useState(null);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationPassword, setVerificationPassword] = useState('');
   const [verificationCodeInput, setVerificationCodeInput] = useState(["", "", "", "", "", ""]);
   const [verificationError, setVerificationError] = useState('');
   const [verificationResendTimer, setVerificationResendTimer] = useState(60);
@@ -404,16 +405,31 @@ export default function AuthPage() {
       const response = await fetch(`${API_BASE_URL}/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: verificationUserId, otpCode: code })
+        body: JSON.stringify({ email: verificationEmail, otpCode: code })
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Invalid verification code');
+      if (!response.ok) {
+        const error = new Error(data.message || 'Invalid verification code');
+        error.data = data;
+        throw error;
+      }
       setToast({ type: 'success', message: 'Email verified successfully! You can now log in.' });
       setShowVerificationModal(false);
       setVerificationCodeInput(["", "", "", "", "", ""]);
+      setVerificationEmail('');
+      setVerificationPassword('');
+      setVerificationError('');
       setIsSignUp(false);
     } catch (err) {
-      setVerificationError(err.message);
+      if (err.data?.restartSignup) {
+        setShowVerificationModal(false);
+        setVerificationEmail('');
+        setVerificationPassword('');
+        setIsSignUp(true);
+        setErrors({ general: err.message });
+      } else {
+        setVerificationError(err.message);
+      }
       setVerificationCodeInput(["", "", "", "", "", ""]);
     } finally {
       setIsLoading(false);
@@ -427,17 +443,37 @@ export default function AuthPage() {
       const response = await fetch(`${API_BASE_URL}/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: verificationUserId })
+        body: JSON.stringify({ email: verificationEmail, password: verificationPassword })
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to resend code');
-      setVerificationResendTimer(60);
+      if (!response.ok) {
+        const error = new Error(data.message || 'Failed to resend code');
+        error.data = data;
+        throw error;
+      }
+      const cooldown = data.retryAfterSeconds || 60;
+      setVerificationResendTimer(cooldown);
       setVerificationCanResend(false);
       setVerificationCodeInput(["", "", "", "", "", ""]);
       setVerificationError('');
       setToast({ type: 'success', message: 'A new verification code was sent to your email.' });
     } catch (err) {
-      setVerificationError(err.message);
+      if (err.data?.restartSignup) {
+        setShowVerificationModal(false);
+        setVerificationEmail('');
+        setVerificationPassword('');
+        setIsSignUp(true);
+        setErrors({ general: err.message });
+      } else {
+        setVerificationError(err.message);
+      }
+      if (err.data?.retryAfterSeconds) {
+        setVerificationResendTimer(err.data.retryAfterSeconds);
+        setVerificationCanResend(false);
+      } else if (err.data?.deliveryFailed) {
+        setVerificationResendTimer(60);
+        setVerificationCanResend(false);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -530,7 +566,11 @@ export default function AuthPage() {
       body: JSON.stringify(userData),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Signup failed');
+    if (!response.ok && !data.requiresVerification) {
+      const error = new Error(data.message || 'Signup failed');
+      error.data = data;
+      throw error;
+    }
     return data;
   };
 
@@ -541,8 +581,22 @@ export default function AuthPage() {
       body: JSON.stringify(credentials),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Login failed');
+    if (!response.ok) {
+      const error = new Error(data.message || 'Login failed');
+      error.data = data;
+      throw error;
+    }
     return data;
+  };
+
+  const openVerificationModal = (email, password, { retryAfterSeconds = 60, message = '' } = {}) => {
+    setVerificationEmail(email);
+    setVerificationPassword(password);
+    setVerificationCodeInput(["", "", "", "", "", ""]);
+    setVerificationError(message);
+    setVerificationResendTimer(retryAfterSeconds);
+    setVerificationCanResend(retryAfterSeconds <= 0);
+    setShowVerificationModal(true);
   };
 
   const saveUserToLocalStorage = (response) => {
@@ -574,8 +628,12 @@ export default function AuthPage() {
       setSuccessMessage('Login successful! Redirecting...');
       setTimeout(() => navigate("/dashboard"), 500);
     } catch (error) {
-      if (error.message.includes('verify your email')) {
-        setErrors({ general: 'Please verify your email first. Check your inbox for the verification code.' });
+      if (error.data?.requiresVerification) {
+        openVerificationModal(error.data.email, formData.password, {
+          retryAfterSeconds: error.data.retryAfterSeconds || 60,
+          message: error.data.deliveryFailed ? error.data.message : ''
+        });
+        setErrors({ general: error.data.message });
       } else {
         setErrors({ general: error.message || 'Login failed. Please try again.' });
       }
@@ -639,6 +697,28 @@ export default function AuthPage() {
         confirmPassword: formData.confirmPassword
       };
       const response = await signUpUser(userData);
+      if (response.requiresVerification) {
+        setFormData({
+          role: 'student',
+          id_number: '',
+          last_name: '',
+          first_name: '',
+          middle_name: '',
+          year_level: '',
+          department: '',
+          course: '',
+          email: '',
+          password: '',
+          confirmPassword: ''
+        });
+        setShowPassword({ password: false, confirmPassword: false });
+        openVerificationModal(response.email || userData.email, userData.password, {
+          retryAfterSeconds: response.retryAfterSeconds || 60,
+          message: response.deliveryFailed ? response.message : ''
+        });
+        setSuccessMessage(response.deliveryFailed ? '' : response.message);
+        return;
+      }
       setFormData({
         role: 'student',
         id_number: '',
@@ -653,19 +733,11 @@ export default function AuthPage() {
         confirmPassword: ''
       });
       setShowPassword({ password: false, confirmPassword: false });
-      if (response.userId && response.requiresVerification) {
-        setVerificationUserId(response.userId);
-        setShowVerificationModal(true);
-        setVerificationResendTimer(60);
-        setVerificationCanResend(false);
-        setSuccessMessage('Account created! Please verify your email.');
-      } else {
-        setSuccessMessage('Account created successfully! You can now login.');
-        setTimeout(() => {
-          setIsSignUp(false);
-          setSuccessMessage('');
-        }, 2000);
-      }
+      setSuccessMessage('Account created successfully! You can now login.');
+      setTimeout(() => {
+        setIsSignUp(false);
+        setSuccessMessage('');
+      }, 2000);
     } catch (error) {
       if (!errors.general) {
         setErrors(prev => ({ ...prev, general: error.message || 'Signup failed. Please try again.' }));
@@ -1019,7 +1091,7 @@ export default function AuthPage() {
               <p className="text-white/80 text-sm mt-1">Enter the 6-digit code sent to your email</p>
             </div>
             <div className="p-6">
-              <div className="text-center mb-4"><div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-3"><FaEnvelope className="w-8 h-8 text-green-600" /></div><p className="text-sm text-gray-600">We sent a code to your email address.</p></div>
+              <div className="text-center mb-4"><div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-3"><FaEnvelope className="w-8 h-8 text-green-600" /></div><p className="text-sm text-gray-600">Verification for</p><p className="text-sm font-medium text-gray-800 break-all">{verificationEmail}</p></div>
               <div className="flex justify-center gap-2 mb-6">
                 {[0, 1, 2, 3, 4, 5].map((index) => (<input key={index} id={`verify-${index}`} type="text" inputMode="numeric" pattern="[0-9]*" maxLength="1" value={verificationCodeInput[index]} onChange={(e) => { const newCode = [...verificationCodeInput]; newCode[index] = e.target.value.replace(/\D/g, ''); setVerificationCodeInput(newCode); if (e.target.value && index < 5) { document.getElementById(`verify-${index + 1}`)?.focus(); } if (verificationError) setVerificationError(''); }} onKeyDown={(e) => { if (e.key === 'Backspace' && !verificationCodeInput[index] && index > 0) { document.getElementById(`verify-${index - 1}`)?.focus(); } }} className="w-12 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:border-[#1B5E20] focus:ring-2 focus:ring-[#1B5E20] outline-none" disabled={isLoading} />))}
               </div>

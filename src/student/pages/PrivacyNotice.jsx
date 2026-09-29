@@ -13,7 +13,8 @@ import {
   Database,
   UserCheck,
   Bell,
-  Clock
+  Clock,
+  Home
 } from "lucide-react";
 import { SCHOOL, OFFICE, SYSTEM } from "../../config/trac.config";
 
@@ -178,6 +179,11 @@ export default function PrivacyNotice() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#F1F8E9]/30 to-white py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-6 flex justify-end">
+          <a href="/" aria-label="Go to home" title="Home" className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#1B5E20] text-white shadow-sm transition hover:bg-[#2E7D32] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B5E20]/30">
+            <Home className="h-5 w-5" />
+          </a>
+        </div>
 
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-[#1B5E20] to-[#2E7D32] rounded-full mb-4 shadow-lg">

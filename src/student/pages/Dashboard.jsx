@@ -81,7 +81,6 @@ export default function Dashboard() {
             <p className="text-slate-500 font-medium">
               ID Number: <span className="font-mono text-slate-700">{formatStudentId(userData.id_number)}</span>
             </p>
-            <p className="text-xs text-gray-400 mt-1">{SCHOOL.fullName}</p>
           </div>
           <div className="flex flex-col items-center md:items-end">
              <span className="bg-[#F1F8E9] text-[#1B5E20] px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200 mb-2">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Phone, Mail, MapPin, Clock, AlertCircle, CheckCircle,
-  ChevronDown, ChevronUp, Users, FileText, Shield, HelpCircle, CreditCard
+  ChevronDown, ChevronUp, Users, FileText, Shield, HelpCircle, CreditCard, Home
 } from "lucide-react";
 import { SCHOOL, OFFICE, SYSTEM } from "../../config/trac.config";
 
@@ -85,6 +85,11 @@ export default function NeedHelp() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#F1F8E9]/30 to-white py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
+        <div className="mb-6 flex justify-end">
+          <a href="/" aria-label="Go to home" title="Home" className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#1B5E20] text-white shadow-sm transition hover:bg-[#2E7D32] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B5E20]/30">
+            <Home className="h-5 w-5" />
+          </a>
+        </div>
 
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-[#1B5E20] to-[#F9A825] rounded-full mb-4 shadow-lg">
@@ -92,7 +97,7 @@ export default function NeedHelp() {
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1B5E20] to-[#F9A825] bg-clip-text text-transparent mb-3">Need Help? - {SCHOOL.shortName}</h1>
           <p className="text-gray-600 text-lg">We're here to assist you with the {SCHOOL.systemName} - {SCHOOL.fullName}</p>
-          <p className="text-xs text-gray-400 mt-2">Institutes: ICS, ISCJS, IVTES, IAS, GS • Programs: BSIT, BSIS, BSCRIM, BTVTED, BTLED, BSHM, BSHRRM, BSHT, BSA, BSF, BSAB, Graduate Studies</p>
+  
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -177,8 +182,7 @@ export default function NeedHelp() {
 
         <div className="mt-10 text-center">
           <p className="text-gray-500 text-sm">{SCHOOL.fullName}<br/>Office of the Campus Registrar • {SCHOOL.footer.location}</p>
-          <p className="text-gray-400 text-xs mt-2">For system-related concerns: {SCHOOL.contact.phone} | {contactEmail}</p>
-          <p className="text-[10px] text-gray-400 mt-1">TRAC REQUEST v1 - Reuses queue/auth/status workflow • Configurable TRAC data architecture</p>
+         
         </div>
       </div>
     </div>
